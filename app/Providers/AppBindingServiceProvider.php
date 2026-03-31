@@ -18,6 +18,14 @@ use App\Repositories\CategoryRepository;
 use App\Repositories\ProductRepository;
 use App\Services\CategoryService;
 use App\Services\ProductService;
+use App\Contracts\Services\CartServiceInterface;
+use App\Contracts\Repositories\CartRepositoryInterface;
+use App\Repositories\CartRepository;
+use App\Services\CartService;
+use App\Contracts\Repositories\OrderRepositoryInterface;
+use App\Contracts\Services\OrderServiceInterface;
+use App\Repositories\OrderRepository;
+use App\Services\OrderService;
 use Illuminate\Support\ServiceProvider;
 
 class AppBindingServiceProvider extends ServiceProvider
@@ -39,5 +47,13 @@ class AppBindingServiceProvider extends ServiceProvider
         // products
         $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
+
+        // carts
+        $this->app->bind(CartServiceInterface::class, CartService::class);
+        $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
+
+        // orders
+        $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
+        $this->app->bind(OrderServiceInterface::class, OrderService::class);
     }
 }
