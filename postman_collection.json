@@ -1,0 +1,578 @@
+{
+    "info": {
+        "name": "MultiShop API",
+        "description": "Multi-tenant e-commerce API. Set the `base_url` and `tenant_url` collection variables before starting.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://multishop.test/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "tenant_url",
+            "value": "http://nike.multishop.test/api/v1",
+            "type": "string"
+        },
+        { "key": "super_token", "value": "", "type": "string" },
+        { "key": "store_token", "value": "", "type": "string" },
+        { "key": "customer_token", "value": "", "type": "string" }
+    ],
+    "item": [
+        {
+            "name": "🔧 Super Admin",
+            "item": [
+                {
+                    "name": "Login as Super Admin",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.token) {",
+                                    "  pm.collectionVariables.set('super_token', res.data.token);",
+                                    "  pm.test('Token saved', () => pm.expect(res.data.token).to.be.a('string'));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/auth/login",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@multishop.test\",\n  \"password\": \"password\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "List Tenants",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{super_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/tenants?page=1&per_page=10",
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "per_page", "value": "10" },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "plan",
+                                    "value": "pro",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "is_active",
+                                    "value": "1",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Tenant",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "  pm.collectionVariables.set('tenant_id', res.data.id);",
+                                    "  pm.test('Tenant created', () => pm.expect(res.success).to.be.true);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{super_token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/admin/tenants",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"New Store\",\n  \"subdomain\": \"newstore\",\n  \"email\": \"contact@newstore.test\",\n  \"plan\": \"free\",\n  \"owner_name\": \"Store Owner\",\n  \"owner_email\": \"owner@newstore.test\",\n  \"owner_password\": \"password123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get Tenant",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{super_token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/admin/tenants/1"
+                    }
+                },
+                {
+                    "name": "Update Tenant",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{super_token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/admin/tenants/1",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"plan\": \"starter\",\n  \"is_active\": true\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Tenant",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{super_token}}"
+                            }
+                        ],
+                        "url": "{{base_url}}/admin/tenants/{{tenant_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔐 Auth (Store)",
+            "item": [
+                {
+                    "name": "Register Customer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/register",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login as Store Admin",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.token) {",
+                                    "  pm.collectionVariables.set('store_token', res.data.token);",
+                                    "  pm.test('Store token saved', () => pm.expect(res.data.token).to.be.a('string'));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/login",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"owner@nike.test\",\n  \"password\": \"password\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login as Customer",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.token) {",
+                                    "  pm.collectionVariables.set('customer_token', res.data.token);",
+                                    "  pm.test('Customer token saved', () => pm.expect(res.data.token).to.be.a('string'));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/login",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/me"
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/logout"
+                    }
+                },
+                {
+                    "name": "Forgot Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/password/forgot",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"john@example.com\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customer_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/auth/password/change",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_password\": \"password123\",\n  \"password\": \"newpassword123\",\n  \"password_confirmation\": \"newpassword123\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "📦 Categories",
+            "item": [
+                {
+                    "name": "List Categories (public)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{tenant_url}}/categories?page=1&per_page=10",
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "per_page", "value": "10" },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "is_active",
+                                    "value": "1",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Category (public)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{tenant_url}}/categories/1"
+                    }
+                },
+                {
+                    "name": "Create Category (admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "  pm.collectionVariables.set('category_id', res.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/categories",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Running Shoes\",\n  \"description\": \"High performance running footwear\",\n  \"is_active\": true,\n  \"sort_order\": 1\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Update Category (admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/categories/{{category_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Running Shoes Updated\",\n  \"sort_order\": 2\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Category (admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/categories/{{category_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🛍️ Products",
+            "item": [
+                {
+                    "name": "List Products (public)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{tenant_url}}/products?page=1&per_page=10",
+                            "query": [
+                                { "key": "page", "value": "1" },
+                                { "key": "per_page", "value": "10" },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "category_id",
+                                    "value": "1",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "in_stock",
+                                    "value": "1",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "min_price",
+                                    "value": "10",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "max_price",
+                                    "value": "100",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Product (public)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{tenant_url}}/products/1"
+                    }
+                },
+                {
+                    "name": "Create Product (admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "  pm.collectionVariables.set('product_id', res.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/products",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"category_id\": 1,\n  \"name\": \"Air Max 90\",\n  \"description\": \"Classic Nike running shoe with visible Air unit.\",\n  \"price\": 120.00,\n  \"compare_price\": 150.00,\n  \"stock_quantity\": 50,\n  \"sku\": \"NKE-AM90-001\",\n  \"is_active\": true,\n  \"images\": []\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Update Product (admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/products/{{product_id}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"price\": 110.00,\n  \"stock_quantity\": 45\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Product (admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{store_token}}"
+                            }
+                        ],
+                        "url": "{{tenant_url}}/products/{{product_id}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🧪 Tenant Isolation Test",
+            "item": [
+                {
+                    "name": "Nike Products (should be Nike only)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://nike.multishop.test/api/v1/products"
+                    }
+                },
+                {
+                    "name": "Adidas Products (should be Adidas only)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://adidas.multishop.test/api/v1/products"
+                    }
+                },
+                {
+                    "name": "Invalid subdomain (should 404)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "http://doesnotexist.multishop.test/api/v1/products"
+                    }
+                }
+            ]
+        }
+    ]
+}

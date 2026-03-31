@@ -8,14 +8,14 @@ Route::prefix('v1')
 
         RouteHelper::includeRouteFiles(__DIR__ . '/Api/V1/Auth');
 
-        // Super admin — no tenant context needed
+        // admin
         Route::prefix('admin')
             ->middleware(['auth:sanctum', 'role:super_admin'])
             ->group(function () {
                 RouteHelper::includeRouteFiles(__DIR__ . '/Api/V1/Admin');
             });
 
-        // All tenant-scoped routes
+        // tenant-scoped routes
         Route::middleware(['tenant', 'tenant.active'])
             ->group(function () {
                 RouteHelper::includeRouteFiles(__DIR__ . '/Api/V1/Store');
