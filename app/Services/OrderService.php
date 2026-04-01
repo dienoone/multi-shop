@@ -18,6 +18,7 @@ class OrderService implements OrderServiceInterface
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected CartRepositoryInterface  $cartRepository,
+        protected StripeService            $stripeService,
     ) {}
 
     public function listForCustomer(User $user, array $filters = []): LengthAwarePaginator
@@ -60,7 +61,6 @@ class OrderService implements OrderServiceInterface
         );
 
         return DB::transaction(function () use ($user, $cart, $data) {
-            // Calculate totals from cart items
             $subtotal = $cart->items->sum(
                 fn($item) => $item->unit_price * $item->quantity
             );
@@ -69,7 +69,6 @@ class OrderService implements OrderServiceInterface
                 + ($data['shipping_amount'] ?? 0)
                 + ($data['tax_amount'] ?? 0);
 
-            // Create the order
             $order = $this->orderRepository->create([
                 'user_id'          => $user->id,
                 'order_number'     => $this->generateOrderNumber(),
@@ -85,7 +84,6 @@ class OrderService implements OrderServiceInterface
                 'payment_status'   => 'unpaid',
             ]);
 
-            // Snapshot each cart item into order_items
             foreach ($cart->items as $cartItem) {
                 $order->items()->create([
                     'product_id'   => $cartItem->product_id,
@@ -97,8 +95,16 @@ class OrderService implements OrderServiceInterface
                 ]);
             }
 
-            // Clear the cart after order is placed
             $this->cartRepository->clearCart($cart);
+
+            $paymentData = $this->stripeService->createPaymentIntent($order);
+
+            $this->orderRepository->update($order, [
+                'payment_intent_id' => $paymentData['payment_intent_id'],
+                'payment_status'    => 'pending',
+            ]);
+
+            $order->client_secret = $paymentData['client_secret'];
 
             return $order->load('items');
         });

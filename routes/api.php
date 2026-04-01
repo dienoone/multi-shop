@@ -1,7 +1,11 @@
 <?php
 
 use App\Helpers\RouteHelper;
+use App\Http\Controllers\Api\V1\Webhook\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/webhook/stripe', [StripeWebhookController::class, 'handle'])
+    ->name('webhook.stripe');
 
 Route::prefix('v1')
     ->group(function () {

@@ -26,7 +26,6 @@ trait BelongsToTenant
         });
     }
 
-    // Escape hatch — query across all tenants
     public static function withoutTenant(): Builder
     {
         return static::withoutGlobalScope('tenant');
