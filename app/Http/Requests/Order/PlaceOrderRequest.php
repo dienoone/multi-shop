@@ -21,6 +21,7 @@ class PlaceOrderRequest extends FormRequest
             'currency'                      => ['sometimes', 'string', 'size:3'],
             'shipping_amount'               => ['sometimes', 'numeric', 'min:0'],
             'tax_amount'                    => ['sometimes', 'numeric', 'min:0'],
+            'coupon_code' => ['sometimes', 'nullable', 'string', 'max:50'],
         ];
     }
 }

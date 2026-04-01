@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Contracts\Repositories\CartRepositoryInterface;
 use App\Contracts\Repositories\OrderRepositoryInterface;
+use App\Contracts\Repositories\CouponRepositoryInterface;
 use App\Contracts\Services\OrderServiceInterface;
+use App\Contracts\Services\CouponServiceInterface;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
@@ -19,6 +21,8 @@ class OrderService implements OrderServiceInterface
         protected OrderRepositoryInterface $orderRepository,
         protected CartRepositoryInterface  $cartRepository,
         protected StripeService            $stripeService,
+        protected CouponServiceInterface   $couponService,
+        protected CouponRepositoryInterface $couponRepository,
     ) {}
 
     public function listForCustomer(User $user, array $filters = []): LengthAwarePaginator
@@ -61,11 +65,18 @@ class OrderService implements OrderServiceInterface
         );
 
         return DB::transaction(function () use ($user, $cart, $data) {
-            $subtotal = $cart->items->sum(
-                fn($item) => $item->unit_price * $item->quantity
-            );
+            $subtotal        = $cart->items->sum(fn($item) => $item->unit_price * $item->quantity);
+            $discountAmount  = 0;
+            $coupon          = null;
+
+            // If customer applied a coupon code — validate and calculate discount
+            if (!empty($data['coupon_code'])) {
+                $coupon         = $this->couponService->validate($data['coupon_code'], $user, $subtotal);
+                $discountAmount = $this->couponService->apply($coupon, $user, $subtotal);
+            }
 
             $total = $subtotal
+                - $discountAmount
                 + ($data['shipping_amount'] ?? 0)
                 + ($data['tax_amount'] ?? 0);
 
@@ -74,14 +85,15 @@ class OrderService implements OrderServiceInterface
                 'order_number'     => $this->generateOrderNumber(),
                 'status'           => OrderStatus::Pending,
                 'subtotal'         => $subtotal,
-                'discount_amount'  => 0,
                 'shipping_amount'  => $data['shipping_amount'] ?? 0,
                 'tax_amount'       => $data['tax_amount'] ?? 0,
-                'total'            => $total,
                 'currency'         => $data['currency'] ?? 'USD',
                 'shipping_address' => $data['shipping_address'],
                 'notes'            => $data['notes'] ?? null,
                 'payment_status'   => 'unpaid',
+                'coupon_id'       => $coupon?->id,
+                'discount_amount' => $discountAmount,
+                'total'           => $total,
             ]);
 
             foreach ($cart->items as $cartItem) {
@@ -93,6 +105,11 @@ class OrderService implements OrderServiceInterface
                     'quantity'     => $cartItem->quantity,
                     'subtotal'     => $cartItem->unit_price * $cartItem->quantity,
                 ]);
+            }
+
+            if ($coupon) {
+                $this->couponRepository->recordUsage($coupon, $user, $order, $discountAmount);
+                $this->couponRepository->incrementUsedCount($coupon);
             }
 
             $this->cartRepository->clearCart($cart);

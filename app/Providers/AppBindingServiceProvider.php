@@ -27,6 +27,10 @@ use App\Contracts\Services\OrderServiceInterface;
 use App\Repositories\OrderRepository;
 use App\Services\OrderService;
 use Illuminate\Support\ServiceProvider;
+use App\Contracts\Repositories\CouponRepositoryInterface;
+use App\Contracts\Services\CouponServiceInterface;
+use App\Repositories\CouponRepository;
+use App\Services\CouponService;
 
 class AppBindingServiceProvider extends ServiceProvider
 {
@@ -55,5 +59,9 @@ class AppBindingServiceProvider extends ServiceProvider
         // orders
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
         $this->app->bind(OrderServiceInterface::class, OrderService::class);
+
+        // coupons
+        $this->app->bind(CouponRepositoryInterface::class, CouponRepository::class);
+        $this->app->bind(CouponServiceInterface::class, CouponService::class);
     }
 }

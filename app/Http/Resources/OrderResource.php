@@ -25,6 +25,7 @@ class OrderResource extends JsonResource
             'can_cancel'       => $this->status->canBeCancelled(),
             'items'            => OrderItemResource::collection($this->whenLoaded('items')),
             'customer'         => new UserResource($this->whenLoaded('user')),
+            'coupon'          => new CouponResource($this->whenLoaded('coupon')),
             'client_secret' => $this->when(isset($this->resource->client_secret), fn() => $this->resource->client_secret),
             'created_at'       => $this->created_at->toDateTimeString(),
         ];
